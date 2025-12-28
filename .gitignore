@@ -4,6 +4,9 @@ __pycache__/
 # --- Virtual environments ---
 .unifiedllm-env/
 
+# --- Metadata ---
+*.egg-info
+
 # --- VS Code ---
 .vscode/
 
