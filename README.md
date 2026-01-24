@@ -29,7 +29,7 @@ Here's a minimal example using Google Gemini:
 from unifiedllm import LLM
 
 # Initialize with Gemini (free tier available)
-llm = LLM(provider="gemini", model="gemini-1.5-flash")
+llm = LLM(provider="gemini", model="gemini-2.5-flash")
 
 # Send a message
 response = llm.chat(prompt="What is machine learning?")
@@ -55,7 +55,7 @@ Then initialize without passing the key explicitly:
 ```python
 from unifiedllm import LLM
 
-llm = LLM(provider="gemini", model="gemini-1.5-flash")
+llm = LLM(provider="gemini", model="gemini-2.5-flash")
 ```
 
 ### Explicit API Key
@@ -67,7 +67,7 @@ from unifiedllm import LLM
 
 llm = LLM(
     provider="gemini",
-    model="gemini-1.5-flash",
+    model="gemini-2.5-flash",
     api_key="your-google-api-key"
 )
 ```
@@ -152,7 +152,7 @@ from unifiedllm import LLM
 from unifiedllm.errors import MissingAPIKeyError, ProviderAPIError
 
 try:
-    llm = LLM(provider="gemini", model="gemini-1.5-flash")
+    llm = LLM(provider="gemini", model="gemini-2.5-flash")
     response = llm.chat(prompt="Hello")
 except MissingAPIKeyError as e:
     print(f"API key missing: {e}")
@@ -170,9 +170,9 @@ except ProviderAPIError as e:
 
 | Provider | Model Examples | Notes |
 |----------|----------------|-------|
-| **Google Gemini** | `gemini-1.5-flash`, `gemini-1.5-pro` | Free tier available; ideal for learning and prototyping |
-| Anthropic | `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229` | Requires API key |
-| OpenAI | `gpt-4o`, `gpt-4o-mini` | Requires API key |
+| **Google Gemini** | `gemini-2.5-flash`, `gemini-2.5-pro` | Free tier available; ideal for learning and prototyping |
+| Anthropic | `claude-sonnet-4-20250514`, `claude-opus-4-1-20250805` | Requires API key |
+| OpenAI | `gpt-4`, `gpt-4o-mini` | Requires API key |
 
 ## Examples
 
