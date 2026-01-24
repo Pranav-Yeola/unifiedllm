@@ -1,115 +1,96 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Optional
 
-from .errors import MissingAPIKeyError, ProviderNotSupportedError
-from .types import LLMResponse, Message, Messages, Params
-from .providers import BaseProvider, GeminiProvider, OpenAIProvider
+from .errors import ProviderNotSupportedError
+from .types import ChatResponse, Messages
+
+from .providers import BaseProvider, AnthropicProvider, GeminiProvider, OpenAIProvider
 
 
-class LLMClient:
+class LLM:
     """
-    Public, provider-agnostic API.
+    Gateway to a specific provider + model.
 
-    v1 supports:
-    - chat(prompt=...)
-    - chat(messages=[...])
+    - Owns the underlying httpx.Client (connection pool).
+    - Exposes close() and supports context manager usage.
     """
 
-    ProvidersClient: Dict[str, Type[BaseProvider]] = {
-        "gemini": GeminiProvider,
-        "openai": OpenAIProvider,
+    PROVIDERS = {
+        GeminiProvider.name: GeminiProvider,
+        OpenAIProvider.name: OpenAIProvider,
+        AnthropicProvider.name: AnthropicProvider,
     }
 
     def __init__(
         self,
-        *, 
+        *,
         provider: str,
         model: str,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
-        timeout: Optional[float] = 60.0,
-        default_params: Optional[Dict[str, Any]] = None,
+        api_key: str = "default",
+        timeout: float = 60.0,
     ) -> None:
-        
-        self.provider = provider.strip().lower()
-        self.model = model.strip()
+        self.provider_name = provider.lower().strip()
+        self.model = model
         self.timeout = timeout
-        self.default_params: Dict[str, Any] = default_params or {}
 
-        if not self.provider:
-            raise ValueError("provider must be a non-empty string")
-        if not self.model:
-            raise ValueError("model must be a non-empty string")
-
-        provider_cls = self.ProvidersClient.get(self.provider)
-        if provider_cls is None:
+        if self.provider_name not in LLM.PROVIDERS:
             raise ProviderNotSupportedError(
-                f"Provider '{self.provider}' is not supported. Supported: {sorted(self.ProvidersClient.keys())}"
+                f"Provider '{provider}' not supported. Supported: {sorted(self.PROVIDERS.keys())}"
             )
 
-        self._backend = provider_cls(
-            api_key=api_key, base_url=base_url, timeout=timeout
+        self._provider: BaseProvider = LLM.PROVIDERS[self.provider_name](
+            model=self.model, api_key=api_key, timeout=self.timeout
         )
 
-        if not self._backend.api_key:
-            raise MissingAPIKeyError(
-                f"Missing API key for provider '{self.provider}'. "
-                f"Set the provider env var or pass api_key explicitly."
-            )
+    def config(
+        self,
+        *,
+        temperature: float | None = None,
+        top_p: float | None = None,
+        max_tokens: int | None = None,
+        stop: list[str] | None = None,
+        custom: dict[str, Any] | None = None,
+    ) -> "LLM":
+        self._provider.config(
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=max_tokens,
+            stop=stop,
+            custom=custom,
+        )
+        return self
+
+    def system_prompt(self, text: str) -> "LLM":
+        self._provider.system_prompt(text)
+        return self
 
     def chat(
         self,
         *,
         prompt: Optional[str] = None,
-        messages: Optional[List[Message]] = None,
-        system: Optional[str] = None,
-        **params: Any,
-    ) -> LLMResponse:
-        normalized = self._normalize_messages(
-            prompt=prompt, messages=messages, system=system
-        )
+        messages: Optional[Messages] = None,
+    ) -> ChatResponse:
+        """
+        Provide either prompt=... OR messages=[{"role": ..., "content": ...}].
+        """
+        if (prompt is None) == (messages is None):
+            raise ValueError("Provide exactly one of: prompt=... or messages=[...]")
 
-        merged: Params = dict(self.default_params)
-        merged.update(params)
+        normalized: Messages
+        if messages is not None:
+            normalized = list(messages)
+        else:
+            normalized = [{"role": "user", "content": str(prompt)}]
 
-        return self._backend.chat(model=self.model, messages=normalized, params=merged)
+        return self._provider.chat(messages=normalized)
 
-    @staticmethod
-    def _normalize_messages(
-        *,
-        prompt: Optional[str],
-        messages: Optional[List[Message]],
-        system: Optional[str],
-    ) -> Messages:
-        if prompt is None and not messages:
-            raise ValueError("Provide either prompt=... or messages=[...]")
+    def close(self) -> None:
+        """Close underlying HTTP resources."""
+        self._provider.close()
 
-        if prompt is not None and messages:
-            raise ValueError(
-                "Provide only one of prompt=... or messages=[...], not both"
-            )
+    def __enter__(self) -> "LLM":
+        return self
 
-        out: List[Message] = []
-
-        if system:
-            out.append({"role": "system", "content": system})
-
-        if prompt is not None:
-            out.append({"role": "user", "content": prompt})
-            return out
-
-        assert messages is not None
-        if not isinstance(messages, list) or len(messages) == 0:
-            raise ValueError("messages must be a non-empty list of {role, content}")
-
-        for i, m in enumerate(messages):
-            role = (m.get("role") or "").strip()
-            content = (m.get("content") or "").strip()
-            if not role:
-                raise ValueError(f"messages[{i}].role must be non-empty")
-            if content == "":
-                raise ValueError(f"messages[{i}].content must be non-empty")
-            out.append({"role": role, "content": content})
-
-        return out
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
