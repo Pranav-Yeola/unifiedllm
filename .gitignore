@@ -2,7 +2,10 @@
 __pycache__/
 
 # --- Virtual environments ---
-.unifiedllm-env/
+.*-env/
+
+# --- Build artifacts ---
+dist/
 
 # --- Metadata ---
 *.egg-info
