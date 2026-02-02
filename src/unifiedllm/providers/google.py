@@ -6,7 +6,7 @@ import httpx
 
 from .base import BaseProvider
 from ..errors import ProviderParseError
-from ..types import Messages, HTTPResponse, LLMUsage, APIErrorDetails
+from ..types import ChatResponse, Messages, HTTPResponse, LLMUsage, APIErrorDetails
 
 
 class GeminiProvider(BaseProvider):
@@ -49,7 +49,6 @@ class GeminiProvider(BaseProvider):
     ) -> None:
         cfg: Dict[str, Any] = {}
 
-        # generationConfig fields (Gemini REST)
         if temperature is not None:
             cfg["temperature"] = temperature
         if top_p is not None:
@@ -75,7 +74,7 @@ class GeminiProvider(BaseProvider):
     def system_prompt(self, text: str) -> None:
         self._system_prompt = text
 
-    def chat(self, *, messages: Messages):
+    def chat(self, *, messages: Messages) -> ChatResponse:
         payload: Dict[str, Any] = {
             "contents": self._convert_messages(messages),
         }

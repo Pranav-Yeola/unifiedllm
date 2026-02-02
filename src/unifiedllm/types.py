@@ -8,7 +8,7 @@ from .enums import Role
 
 
 class Message(TypedDict):
-    role: Role | Literal["user","model"]
+    role: Role | Literal["user", "model"]
     content: str
 
 

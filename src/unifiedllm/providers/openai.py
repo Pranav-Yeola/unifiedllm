@@ -103,6 +103,45 @@ class OpenAIProvider(BaseProvider):
         )
         return self._parse_chat_response(http_resp)
 
+    def _extract_request_id(self, http_resp: HTTPResponse) -> Optional[str]:
+        rid: str = http_resp.headers.get("x-request-id") or http_resp.headers.get(
+            "request-id"
+        )
+        return rid.strip() if rid else None
+
+    def _extract_text(self, data: Dict[str, Any]) -> str:
+        choices: List[Dict] = data.get("choices")
+        if not isinstance(choices, list):
+            raise ProviderParseError(
+                provider=self.name,
+                display_name=self.display_name,
+                model=self.model,
+                detail="Unexpected response shape: 'choices' {}.".format(
+                    "missing" if choices is None else "not a list"
+                ),
+                raw=data,
+            )
+
+        if not choices:  # valid shape but empty -> treat as no text
+            return ""
+
+        msg = choices[0].get("message") if isinstance(choices[0], dict) else None
+        content = msg.get("content") if isinstance(msg, dict) else None
+        text = content if isinstance(content, str) else ""
+
+        return text
+
+    def _extract_usage(self, data: Dict[str, Any]) -> Optional[LLMUsage]:
+        usage_obj = data.get("usage")
+        if not isinstance(usage_obj, dict):
+            return None
+
+        return LLMUsage(
+            prompt_tokens=usage_obj.get("prompt_tokens"),
+            completion_tokens=usage_obj.get("completion_tokens"),
+            total_tokens=usage_obj.get("total_tokens"),
+        )
+
     def _extract_error_details(self, resp: httpx.Response) -> APIErrorDetails:
         request_id = resp.headers.get("x-request-id") or resp.headers.get("request-id")
 
@@ -141,40 +180,3 @@ class OpenAIProvider(BaseProvider):
             )
 
         return out
-
-    def _extract_request_id(self, http_resp: HTTPResponse) -> Optional[str]:
-        rid: str = http_resp.headers.get("x-request-id") or http_resp.headers.get("request-id")
-        return rid.strip() if rid else None
-
-    def _extract_text(self, data: Dict[str, Any]) -> str:
-        choices: List[Dict] = data.get("choices")
-        if not isinstance(choices, list):
-            raise ProviderParseError(
-                provider=self.name,
-                display_name=self.display_name,
-                model=self.model,
-                detail="Unexpected response shape: 'choices' {}.".format(
-                    "missing" if choices is None else "not a list"
-                ),
-                raw=data,
-            )
-
-        if not choices:  # valid shape but empty -> treat as no text
-            return ""
-
-        msg = choices[0].get("message") if isinstance(choices[0], dict) else None
-        content = msg.get("content") if isinstance(msg, dict) else None
-        text = content if isinstance(content, str) else ""
-
-        return text
-
-    def _extract_usage(self, data: Dict[str, Any]) -> Optional[LLMUsage]:
-        usage_obj = data.get("usage")
-        if not isinstance(usage_obj, dict):
-            return None
-
-        return LLMUsage(
-            prompt_tokens=usage_obj.get("prompt_tokens"),
-            completion_tokens=usage_obj.get("completion_tokens"),
-            total_tokens=usage_obj.get("total_tokens"),
-        )

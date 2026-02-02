@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from .base import BaseProvider
-from ..errors import ProviderParseError, MissingAPIKeyError
+from ..errors import ProviderParseError
 from ..types import ChatResponse, Messages, HTTPResponse, LLMUsage, APIErrorDetails
 
 
@@ -101,7 +101,9 @@ class AnthropicProvider(BaseProvider):
         return self._parse_chat_response(http_resp)
 
     def _extract_request_id(self, http_resp: HTTPResponse) -> Optional[str]:
-        rid: str = http_resp.headers.get("request-id") or http_resp.headers.get("x-request-id")
+        rid: str = http_resp.headers.get("request-id") or http_resp.headers.get(
+            "x-request-id"
+        )
         return rid.strip() if rid else None
 
     def _extract_text(self, data: Dict[str, Any]) -> str:

@@ -18,8 +18,6 @@ from ..errors import (
     HTTPStatusError,
 )
 
-# from ..enums import HTTPErrorCode  # adjust import path if needed
-
 
 class BaseProvider(ABC):
     """
