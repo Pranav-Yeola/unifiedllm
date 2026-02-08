@@ -4,22 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unifiedllm-sdk"
-version = "0.1.0"
-description = "Unified chat() interface for multiple LLM providers (OpenAI, Anthropic, Gemini)."
+version = "0.1.2"
+description = "A lightweight, provider-agnostic Python SDK offering a unified chat() API for multiple LLM providers (OpenAI, Anthropic, Gemini)."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-
-dependencies = [
-  "httpx>=0.25"
-]
-
+authors = [{ name = "Pranav Yeola" }]
+dependencies = ["httpx>=0.25"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
+
+
+[project.urls]
+Homepage = "https://github.com/Pranav-Yeola/unifiedllm"
+Repository = "https://github.com/Pranav-Yeola/unifiedllm"
+
 
 [project.optional-dependencies]
 dev = [

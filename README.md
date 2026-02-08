@@ -16,7 +16,7 @@ A lightweight Python SDK that provides a unified interface for interacting with 
 ## Installation
 
 ```bash
-pip install unifiedllm
+pip install unifiedllm-sdk
 ```
 
 **Requirements**: Python 3.10+
@@ -186,7 +186,7 @@ These examples are designed to help beginners learn LLM integration with minimal
 
 ## Project Status
 
-`unifiedllm` is currently in **pre-1.0 development** (version 0.1.0). The API is functional but may change as the library matures.
+`unifiedllm` is currently in **pre-1.0 development** (version 0.1.1). The API is functional but may change as the library matures.
 
 **Current limitations**:
 - No streaming support
